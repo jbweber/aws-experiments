@@ -33,7 +33,7 @@ resource "aws_subnet" "public" {
   availability_zone = local.azs[count.index]
   cidr_block        = cidrsubnet(local.public_cidr, 2, count.index)
 
-  tags = merge(tomap({ "Name" : "public-${count.index + 1}" }), local.tags)
+  tags = merge(tomap({ "Name" : "public-${count.index + 1}", "type" : "public" }), local.tags)
 }
 
 resource "aws_route_table" "public" {
@@ -61,7 +61,7 @@ resource "aws_subnet" "private" {
   availability_zone = local.azs[count.index]
   cidr_block        = cidrsubnet(local.private_cidr, 2, count.index)
 
-  tags = merge(tomap({ "Name" : "private-${count.index + 1}" }), local.tags)
+  tags = merge(tomap({ "Name" : "private-${count.index + 1}", "type" : "private" }), local.tags)
 }
 
 resource "aws_route_table" "private" {

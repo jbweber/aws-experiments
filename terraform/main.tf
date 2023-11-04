@@ -10,6 +10,8 @@ locals {
   tags = {
     "developer_initials" : var.developer_initals
   }
+
+  ssh_public_key = file(format("%s/%s", var.ssh_public_key_path, var.ssh_public_key_file))
 }
 #   az_count = (length(data.aws_availability_zones.azs) >= 3) ? 3 : 2
 
@@ -28,4 +30,12 @@ module "network" {
 
   vpc_cidr = var.vpc_cidr
   tags     = local.tags
+}
+
+module "jumphost" {
+  source = "./modules/jumphost"
+
+  ssh_ingress_cidrs = var.ssh_ingress_cidrs
+  ssh_public_key    = local.ssh_public_key
+  vpc_id            = module.network.vpc_id
 }

@@ -10,26 +10,6 @@ variable "vpc_cidr" {
   default = "10.64.64.0/18"
 }
 
-variable "vpc_network_address" {
-  type    = string
-  default = "10.64.64.0"
-}
-
-variable "vpc_network_bits" {
-  type    = number
-  default = 18
-}
-
-variable "public_subnet_cidr" {
-  type    = string
-  default = "10.64.64.0/20"
-}
-
-variable "private_subnet_cidr" {
-  type    = string
-  default = "10.64.96.0/20"
-}
-
 # ssh
 variable "ssh_public_key_file" {
   type    = string
@@ -41,8 +21,8 @@ variable "ssh_public_key_path" {
   default = "~/.ssh"
 }
 
-variable "ssh_ingress_cidr" {
-  type = string
+variable "ssh_ingress_cidrs" {
+  type = list(string)
 }
 
 variable "aws_region" {
