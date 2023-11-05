@@ -6,6 +6,9 @@ resource "random_id" "id" {
 #   state = "available"
 # }
 
+data "aws_caller_identity" "this" {}
+
+
 locals {
   tags = {
     "developer_initials" : var.developer_initals
@@ -38,4 +41,20 @@ module "jumphost" {
   ssh_ingress_cidrs = var.ssh_ingress_cidrs
   ssh_public_key    = local.ssh_public_key
   vpc_id            = module.network.vpc_id
+}
+
+module "database" {
+  source = "./modules/database"
+
+  name                    = "jwdb"
+  db_subnet_group_subnets = module.network.private_subnet_ids
+
+  tags = local.tags
+}
+
+module "my_key" {
+  source = "./modules/kms"
+
+  alias               = "bob"
+  enable_key_rotation = true
 }

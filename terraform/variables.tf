@@ -29,3 +29,9 @@ variable "aws_region" {
   type    = string
   default = "us-east-2"
 }
+
+#
+variable "kms_administrators" {
+  type    = list(string)
+  default = []
+}

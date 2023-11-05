@@ -3,3 +3,5 @@
 /terraform/terraform.tfstate*
 /terraform/variables/local.tfvars
 
+/.idea
+
