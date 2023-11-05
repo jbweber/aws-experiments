@@ -3,8 +3,10 @@ resource "random_id" "this" {
 }
 
 locals {
-  module_id = random_id.this.hex
-  unique_id = (var.unique_id != "") ? var.unique_id : local.module_id
+  module_id            = random_id.this.hex
+  unique_id            = (var.unique_id != "") ? var.unique_id : local.module_id
+  hostname             = var.hostname_use_unique_id_suffix ? local.hostname_with_suffix : var.hostname
+  hostname_with_suffix = "${var.hostname}-${local.unique_id}"
 
   tags = merge(tomap({ "module_id" : local.module_id, "unique_id" : local.unique_id }), var.tags)
 }
@@ -17,8 +19,8 @@ resource "aws_key_pair" "this" {
 }
 
 resource "aws_security_group" "this" {
-  name   = "jumphost-${local.unique_id}"
-  vpc_id = var.vpc_id
+  name   = local.hostname_with_suffix
+  vpc_id = data.aws_subnet.this.vpc_id
 
   tags = local.tags
 
@@ -40,7 +42,7 @@ resource "aws_security_group_rule" "egress_anywhere" {
 resource "aws_security_group_rule" "ingress_ssh" {
   for_each = (length(var.ssh_ingress_cidrs) > 0) ? toset(["do"]) : toset([])
 
-  description       = "Reason: allow access to the jumphost"
+  description       = "Reason: allow access to the instance"
   security_group_id = aws_security_group.this.id
   type              = "ingress"
   from_port         = 22
@@ -50,7 +52,7 @@ resource "aws_security_group_rule" "ingress_ssh" {
 }
 
 resource "aws_iam_role" "this" {
-  name = "jumphost-${local.unique_id}"
+  name = local.hostname_with_suffix
 
   assume_role_policy = jsonencode({
     Version   = "2012-10-17"
@@ -67,7 +69,7 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_instance_profile" "this" {
-  name = "jumphost-${local.unique_id}"
+  name = local.hostname_with_suffix
   role = aws_iam_role.this.name
 }
 
@@ -79,7 +81,7 @@ resource "aws_instance" "this" {
   key_name               = aws_key_pair.this.key_name
   iam_instance_profile   = aws_iam_instance_profile.this.name
 
-  tags = merge(tomap({ "Name" : "jumphost-${local.unique_id}" }), local.tags)
+  tags = merge(tomap({ "Name" : local.hostname }), local.tags)
 
   lifecycle {
     ignore_changes = [subnet_id]
@@ -87,10 +89,14 @@ resource "aws_instance" "this" {
 }
 
 resource "aws_eip" "this" {
-  tags = merge(tomap({ "Name" : "jumphost-eip-${local.unique_id}" }), local.tags)
+  count = var.attach_external_ip ? 1 : 0
+
+  tags = merge(tomap({ "Name" : "${local.hostname_with_suffix}-eip" }), local.tags)
 }
 
 resource "aws_eip_association" "this" {
+  count = var.attach_external_ip ? 1 : 0
+
   instance_id   = aws_instance.this.id
-  allocation_id = aws_eip.this.id
+  allocation_id = aws_eip.this[0].id
 }
