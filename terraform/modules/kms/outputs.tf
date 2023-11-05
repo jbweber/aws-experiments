@@ -1,9 +1,9 @@
 output "kms_alias_arn" {
-  value = aws_kms_alias.this.arn
+  value = aws_kms_alias.this[0].arn
 }
 
 output "kms_alias_name" {
-  value = aws_kms_alias.this.name
+  value = aws_kms_alias.this[0].name
 }
 
 output "kms_key_arn" {

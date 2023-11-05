@@ -1,11 +1,10 @@
-variable "create" {
-  type    = bool
-  default = true
-}
-
 variable "name" {
-  type    = string
-  default = ""
+  type = string
+
+  validation {
+    condition     = can(regex("^[a-zA-Z][0-9a-zA-Z]+$", var.name))
+    error_message = "name must start with a letter and contain only alpha numeric characters"
+  }
 }
 
 variable "tags" {
@@ -13,12 +12,18 @@ variable "tags" {
   default = {}
 }
 
-# db subnet group
+variable "unique_id" {
+  type        = string
+  description = "A user defined unique identifier which can be used to make resources unique. If none is passed the module_id will be used."
+  default     = ""
+}
 
-variable "create_db_subnet_group" {
+variable "use_unique_id_suffix" {
   type    = bool
   default = false
 }
+
+# db subnet group
 
 variable "db_subnet_group_name" {
   type    = string
@@ -32,76 +37,27 @@ variable db_subnet_group_subnets {
 
 # cluster
 
-variable "is_primary_cluster" {
-  description = "Determines whether cluster is primary cluster with writer instance (set to `false` for global cluster and replica clusters)"
-  type        = bool
-  default     = true
-}
-
-variable "cluster_use_name_prefix" {
-  description = "Whether to use `name` as a prefix for the cluster"
-  type        = bool
-  default     = false
-}
-
-variable "allocated_storage" {
-  description = "The amount of storage in gibibytes (GiB) to allocate to each DB instance in the Multi-AZ DB cluster. (This setting is required to create a Multi-AZ DB cluster)"
-  type        = number
-  default     = null
-}
-
-variable "allow_major_version_upgrade" {
-  description = "Enable to allow major engine version upgrades when changing engine versions. Defaults to `false`"
-  type        = bool
-  default     = false
-}
-
-variable "apply_immediately" {
-  description = "Specifies whether any cluster modifications are applied immediately, or during the next maintenance window. Default is `false`"
-  type        = bool
-  default     = null
-}
-
-variable "availability_zones" {
-  description = "List of EC2 Availability Zones for the DB cluster storage where DB cluster instances can be created. RDS automatically assigns 3 AZs if less than 3 AZs are configured, which will show as a difference requiring resource recreation next Terraform apply"
-  type        = list(string)
-  default     = null
-}
-
-variable "backtrack_window" {
-  description = "The target backtrack window, in seconds. Only available for `aurora` engine currently. To disable backtracking, set this value to 0. Must be between 0 and 259200 (72 hours)"
-  type        = number
-  default     = null
-}
-
 variable "backup_retention_period" {
-  description = "The days to retain backups for. Default `7`"
+  description = "The days to retain backups for. Default `2`"
   type        = number
-  default     = 7
-}
-
-variable "cluster_members" {
-  description = "List of RDS Instances that are a part of this cluster"
-  type        = list(string)
-  default     = null
-}
-
-variable "copy_tags_to_snapshot" {
-  description = "Copy all Cluster `tags` to snapshots"
-  type        = bool
-  default     = null
+  default     = 2
+  validation {
+    condition     = var.backup_retention_period >= 2 && var.backup_retention_period <= 35
+    error_message = "backup_retention_period must be between 2 and 35"
+  }
 }
 
 variable "database_name" {
   description = "Name for an automatically created database on cluster creation"
   type        = string
-  default     = null
-}
-
-variable "db_cluster_instance_class" {
-  description = "The compute and memory capacity of each DB instance in the Multi-AZ DB cluster, for example db.m6g.xlarge. Not all DB instance classes are available in all AWS Regions, or for all database engines"
-  type        = string
-  default     = null
+  validation {
+    condition     = lower(var.database_name) != "postgres"
+    error_message = "database_name cannot be 'postgres'"
+  }
+  validation {
+    condition     = can(regex("^[a-zA-Z][0-9a-zA-Z]+$", var.database_name))
+    error_message = "database_name must start with a letter and contain only alpha numeric characters"
+  }
 }
 
 variable "db_cluster_db_instance_parameter_group_name" {
@@ -113,13 +69,7 @@ variable "db_cluster_db_instance_parameter_group_name" {
 variable "deletion_protection" {
   description = "If the DB instance should have deletion protection enabled. The database can't be deleted when this value is set to `true`. The default is `false`"
   type        = bool
-  default     = null
-}
-
-variable "enable_global_write_forwarding" {
-  description = "Whether cluster should forward writes to an associated global cluster. Applied to secondary clusters to enable them to forward writes to an `aws_rds_global_cluster`'s primary cluster"
-  type        = bool
-  default     = null
+  default     = false
 }
 
 variable "enabled_cloudwatch_logs_exports" {
@@ -128,28 +78,18 @@ variable "enabled_cloudwatch_logs_exports" {
   default     = []
 }
 
-variable "enable_http_endpoint" {
-  description = "Enable HTTP endpoint (data API). Only valid when engine_mode is set to `serverless`"
-  type        = bool
-  default     = null
-}
-
-variable "engine" {
-  description = "The name of the database engine to be used for this DB cluster. Defaults to `aurora`. Valid Values: `aurora`, `aurora-mysql`, `aurora-postgresql`"
-  type        = string
-  default     = "aurora-postgresql"
-}
-
-variable "engine_mode" {
-  description = "The database engine mode. Valid values: `global`, `multimaster`, `parallelquery`, `provisioned`, `serverless`. Defaults to: `provisioned`"
-  type        = string
-  default     = "provisioned"
-}
-
 variable "engine_version" {
   description = "The database engine version. Updating this argument results in an outage"
   type        = string
-  default     = null
+  default     = "14.9"
+  validation {
+    condition     = (tonumber(split(".", var.engine_version)[0]) >= 14 && tonumber(split(".", var.engine_version)[1]) >= 9) || tonumber(var.engine_version) >= 15
+    error_message = "engine_version must be equal or greater than version 14.9"
+  }
+  validation {
+    condition     = can(regex("\\.", var.engine_version))
+    error_message = "engine_version must be fully specified"
+  }
 }
 
 variable "final_snapshot_identifier" {
@@ -158,22 +98,10 @@ variable "final_snapshot_identifier" {
   default     = null
 }
 
-variable "global_cluster_identifier" {
-  description = "The global cluster identifier specified on `aws_rds_global_cluster`"
-  type        = string
-  default     = null
-}
-
 variable "iam_database_authentication_enabled" {
   description = "Specifies whether or mappings of AWS Identity and Access Management (IAM) accounts to database accounts is enabled"
   type        = bool
-  default     = null
-}
-
-variable "iops" {
-  description = "The amount of Provisioned IOPS (input/output operations per second) to be initially allocated for each DB instance in the Multi-AZ DB cluster"
-  type        = number
-  default     = null
+  default     = true
 }
 
 variable "kms_key_id" {
@@ -212,38 +140,17 @@ variable "network_type" {
   default     = null
 }
 
-variable "port" {
-  type    = string
-  default = null
-}
-
 variable "preferred_backup_window" {
   description = "The daily time range during which automated backups are created if automated backups are enabled using the `backup_retention_period` parameter. Time in UTC"
   type        = string
-  default     = "02:00-03:00"
+  default     = "21:00-22:00"
 }
 
 variable "preferred_maintenance_window" {
   description = "The weekly time range during which system maintenance can occur, in (UTC)"
   type        = string
-  default     = "sun:05:00-sun:06:00"
+  default     = "sun:22:00-sun:23:00"
 }
-
-variable "replication_source_identifier" {
-  description = "ARN of a source DB cluster or DB instance if this DB cluster is to be created as a Read Replica"
-  type        = string
-  default     = null
-}
-
-variable "restore_to_point_in_time" {
-  description = "Map of nested attributes for cloning Aurora cluster"
-  type        = map(string)
-  default     = {}
-}
-
-
-
-
 
 variable "skip_final_snapshot" {
   description = "Determines whether a final snapshot is created before the cluster is deleted. If true is specified, no snapshot is created"
@@ -251,17 +158,7 @@ variable "skip_final_snapshot" {
   default     = false
 }
 
-variable "snapshot_identifier" {
-  description = "Specifies whether or not to create this cluster from a snapshot. You can use either the name or ARN when specifying a DB cluster snapshot, or the ARN when specifying a DB snapshot"
-  type        = string
-  default     = null
-}
 
-variable "source_region" {
-  description = "The source region for an encrypted replica DB cluster"
-  type        = string
-  default     = null
-}
 
 variable "storage_encrypted" {
   description = "Specifies whether the DB cluster is encrypted. The default is `true`"
@@ -272,23 +169,11 @@ variable "storage_encrypted" {
 variable "storage_type" {
   description = "Determines the storage type for the DB cluster. Optional for Single-AZ, required for Multi-AZ DB clusters. Valid values for Single-AZ: `aurora`, `\"\"` (default, both refer to Aurora Standard), `aurora-iopt1` (Aurora I/O Optimized). Valid values for Multi-AZ: `io1` (default)."
   type        = string
-  default     = null
-}
-
-variable "cluster_tags" {
-  description = "A map of tags to add to only the cluster. Used for AWS Instance Scheduler tagging"
-  type        = map(string)
-  default     = {}
+  default     = ""
 }
 
 variable "vpc_security_group_ids" {
   description = "List of VPC security groups to associate to the cluster in addition to the security group created"
   type        = list(string)
   default     = []
-}
-
-variable "cluster_timeouts" {
-  description = "Create, update, and delete timeout configurations for the cluster"
-  type        = map(string)
-  default     = {}
 }

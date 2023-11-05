@@ -34,14 +34,27 @@ module "jumphost" {
   unique_id                     = local.unique_id
 }
 
-#module "database" {
-#  source = "./modules/database"
-#
-#  name                    = "jwdb"
-#  db_subnet_group_subnets = module.network.private_subnet_ids
-#
-#  tags = local.tags
-#}
+module "kms_secretsmanager" {
+  source = "./modules/kms"
+
+  alias               = "secretsmanager"
+  enable_key_rotation = true
+  policy              = data.aws_iam_policy_document.kms_resource_policy_secretsmanager.json
+}
+
+module "database" {
+  source = "./modules/database"
+
+  database_name                 = "jwdb"
+  master_username               = "root"
+  master_user_secret_kms_key_id = module.kms_secretsmanager.kms_key_arn
+  manage_master_user_password   = true
+  name                          = "jwdb"
+  db_subnet_group_subnets       = module.network.private_subnet_ids
+
+
+  tags = local.tags
+}
 
 #module "my_key" {
 #  source = "./modules/kms"
