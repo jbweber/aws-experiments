@@ -42,13 +42,25 @@ resource "aws_security_group_rule" "egress_anywhere" {
 resource "aws_security_group_rule" "ingress_ssh" {
   for_each = (length(var.ssh_ingress_cidrs) > 0) ? toset(["do"]) : toset([])
 
-  description       = "Reason: allow access to the instance"
+  description       = "Reason: allow ssh access to the instance"
   security_group_id = aws_security_group.this.id
   type              = "ingress"
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
   cidr_blocks       = var.ssh_ingress_cidrs
+}
+
+resource "aws_security_group_rule" "ingress_ping" {
+  for_each = (length(var.ssh_ingress_cidrs) > 0) ? toset(["do"]) : toset([])
+
+  description       = "Reason: allow ping access to the instance"
+  security_group_id = aws_security_group.this.id
+  type              = "ingress"
+  from_port         = 8
+  to_port           = 0
+  protocol          = "icmp"
+  cidr_blocks       = [data.aws_vpc.this.cidr_block]
 }
 
 resource "aws_iam_role" "this" {

@@ -5,3 +5,7 @@ data "aws_ssm_parameter" "amazon_linux_ami" {
 data "aws_subnet" "this" {
   id = var.subnet_id
 }
+
+data "aws_vpc" "this" {
+  id = data.aws_subnet.this.vpc_id
+}

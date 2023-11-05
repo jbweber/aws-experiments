@@ -23,13 +23,15 @@ module "network" {
 }
 
 module "jumphost" {
-  source = "./modules/jumphost"
+  source = "./modules/instance"
 
-  ssh_ingress_cidrs = var.ssh_ingress_cidrs
-  ssh_public_key    = local.ssh_public_key
-  subnet_id         = module.network.public_subnet_ids[0]
-  vpc_id            = module.network.vpc_id
-  unique_id         = local.unique_id
+  attach_external_ip            = true
+  hostname                      = "jumphost"
+  hostname_use_unique_id_suffix = true
+  ssh_ingress_cidrs             = var.ssh_ingress_cidrs
+  ssh_public_key                = local.ssh_public_key
+  subnet_id                     = module.network.public_subnet_ids[0]
+  unique_id                     = local.unique_id
 }
 
 #module "database" {
