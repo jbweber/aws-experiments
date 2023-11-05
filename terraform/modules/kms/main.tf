@@ -4,16 +4,7 @@ resource "random_id" "this" {
 
 locals {
   module_id = random_id.this.hex
-
-  tags = merge({ "module_id" : local.module_id }, var.tags)
-}
-
-data "aws_caller_identity" "this" {}
-
-data "aws_iam_policy_document" "this" {
-  statement {
-
-  }
+  tags      = merge({ "module_id" : local.module_id }, var.tags)
 }
 
 resource aws_kms_key "this" {

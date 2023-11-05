@@ -6,3 +6,8 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "unique_id" {
+  type    = string
+  default = ""
+}
