@@ -28,33 +28,34 @@ locals {
 
 # }
 
-module "network" {
-  source = "./modules/network"
+#module "network" {
+#  source = "./modules/network"
+#
+#  vpc_cidr = var.vpc_cidr
+#  tags     = local.tags
+#}
+#
+#module "jumphost" {
+#  source = "./modules/jumphost"
+#
+#  ssh_ingress_cidrs = var.ssh_ingress_cidrs
+#  ssh_public_key    = local.ssh_public_key
+#  vpc_id            = module.network.vpc_id
+#}
 
-  vpc_cidr = var.vpc_cidr
-  tags     = local.tags
-}
+#module "database" {
+#  source = "./modules/database"
+#
+#  name                    = "jwdb"
+#  db_subnet_group_subnets = module.network.private_subnet_ids
+#
+#  tags = local.tags
+#}
 
-module "jumphost" {
-  source = "./modules/jumphost"
-
-  ssh_ingress_cidrs = var.ssh_ingress_cidrs
-  ssh_public_key    = local.ssh_public_key
-  vpc_id            = module.network.vpc_id
-}
-
-module "database" {
-  source = "./modules/database"
-
-  name                    = "jwdb"
-  db_subnet_group_subnets = module.network.private_subnet_ids
-
-  tags = local.tags
-}
-
-module "my_key" {
-  source = "./modules/kms"
-
-  alias               = "bob"
-  enable_key_rotation = true
-}
+#module "my_key" {
+#  source = "./modules/kms"
+#
+#  alias               = "bob"
+#  enable_key_rotation = true
+#  policy = data.aws_iam_policy_document.kms_resource_policy_default.json
+#}
