@@ -21,9 +21,9 @@ variable "ssh_public_key_path" {
   default = "~/.ssh"
 }
 
-variable "ssh_ingress_cidrs" {
-  type = list(string)
-}
+# variable "ssh_ingress_cidrs" {
+#   type = list(string)
+# }
 
 variable "aws_region" {
   type    = string
@@ -31,7 +31,7 @@ variable "aws_region" {
 }
 
 #
-variable "kms_administrators" {
-  type    = list(string)
-  default = []
-}
+# variable "kms_administrators" {
+#   type    = list(string)
+#   default = []
+# }

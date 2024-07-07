@@ -2,6 +2,7 @@
 /terraform/.terraform.lock.hcl
 /terraform/terraform.tfstate*
 /terraform/variables/local.tfvars
+/terraform/terraform.tfvars
 
 /.idea
 
