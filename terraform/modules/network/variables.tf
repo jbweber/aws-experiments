@@ -8,6 +8,11 @@ variable "enable_ipv4" {
   default = true
 }
 
+variable "enable_ipv4_nat" {
+  type = bool
+  default = false
+}
+
 variable "enable_ipv6" {
   type    = bool
   default = false

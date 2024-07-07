@@ -3,15 +3,15 @@ resource "random_id" "this" {
 }
 
 locals {
-  azs       = data.aws_availability_zones.this.names
-  az_count  = (length(data.aws_availability_zones.this) >= 3) ? 3 : 2
-  module_id = random_id.this.hex
-  unique_id = (var.unique_id != "") ? var.unique_id : local.module_id
+  azs                = data.aws_availability_zones.this.names
+  az_count           = (length(data.aws_availability_zones.this) >= 3) ? 3 : 2
+  module_instance_id = random_id.this.hex
+  unique_id          = (var.unique_id != "") ? var.unique_id : local.module_instance_id
 
   private_cidr = cidrsubnet(var.vpc_cidr, 1, 0)
   public_cidr  = cidrsubnet(var.vpc_cidr, 1, 1)
 
-  tags = merge(tomap({ "module_id" : local.module_id, "unique_id" : local.unique_id }), var.tags)
+  tags = merge(tomap({ "module_instance_id" : local.module_instance_id, "unique_id" : local.unique_id }), var.tags)
 }
 
 resource "aws_vpc" "this" {
@@ -23,12 +23,6 @@ resource "aws_vpc" "this" {
   assign_generated_ipv6_cidr_block = var.enable_ipv6
 
   tags = merge(tomap({ Name : "${local.unique_id}-vpc" }), local.tags)
-}
-
-resource "aws_internet_gateway" "this" {
-  vpc_id = aws_vpc.this.id
-
-  tags = merge(tomap({ Name : "${local.unique_id}-igw" }), local.tags)
 }
 
 resource "aws_subnet" "public" {
@@ -51,7 +45,7 @@ resource "aws_subnet" "public" {
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.this.id
 
-  tags = merge(tomap({ "Name" : "${local.unique_id}-public-rtb" }), local.tags)
+  tags = merge(tomap({ "Name" : "${local.unique_id}-rtb-public" }), local.tags)
 }
 
 resource "aws_route_table_association" "public" {
@@ -59,6 +53,12 @@ resource "aws_route_table_association" "public" {
 
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
+}
+
+resource "aws_internet_gateway" "this" {
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(tomap({ Name : "${local.unique_id}-igw" }), local.tags)
 }
 
 resource "aws_route" "ipv4gateway" {
@@ -74,22 +74,6 @@ resource "aws_route" "ipv6gateway" {
 
   route_table_id              = aws_route_table.public.id
   gateway_id                  = aws_internet_gateway.this.id
-  destination_ipv6_cidr_block = "::/0"
-}
-
-resource "aws_egress_only_internet_gateway" "ipv6_private_egress" {
-  count = var.enable_ipv6 && var.enable_ipv6_private_egress ? 1 : 0
-
-  vpc_id = aws_vpc.this.id
-
-  tags = merge(tomap({ Name : "${local.unique_id}-eoigw" }), local.tags)
-}
-
-resource "aws_route" "ipv6_private_egress" {
-  count = (var.enable_ipv6 && var.enable_ipv6_private_egress) ? local.az_count : 0
-
-  route_table_id              = aws_route_table.private[count.index].id
-  egress_only_gateway_id      = aws_egress_only_internet_gateway.ipv6_private_egress[0].id
   destination_ipv6_cidr_block = "::/0"
 }
 
@@ -114,7 +98,7 @@ resource "aws_route_table" "private" {
   count = local.az_count
 
   vpc_id = aws_vpc.this.id
-  tags   = merge(tomap({ "Name" : "${local.unique_id}-private-rtb-${local.azs[count.index]}" }), local.tags)
+  tags   = merge(tomap({ "Name" : "${local.unique_id}-rtb-private-${local.azs[count.index]}" }), local.tags)
 }
 
 resource "aws_route_table_association" "private" {
@@ -122,4 +106,45 @@ resource "aws_route_table_association" "private" {
 
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private[count.index].id
+}
+
+resource "aws_egress_only_internet_gateway" "ipv6_private_egress" {
+  count = var.enable_ipv6 && var.enable_ipv6_private_egress ? 1 : 0
+
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(tomap({ Name : "${local.unique_id}-eoigw" }), local.tags)
+}
+
+resource "aws_route" "ipv6_private_egress" {
+  count = (var.enable_ipv6 && var.enable_ipv6_private_egress) ? local.az_count : 0
+
+  route_table_id              = aws_route_table.private[count.index].id
+  egress_only_gateway_id      = aws_egress_only_internet_gateway.ipv6_private_egress[0].id
+  destination_ipv6_cidr_block = "::/0"
+}
+
+resource "aws_eip" "nat" {
+  count = var.enable_ipv4 && var.enable_ipv4_nat ? local.az_count : 0
+
+  domain = "vpc"
+
+  tags = merge(tomap({ Name : "${local.unique_id}-nat-eip-${local.azs[count.index]}" }), local.tags)
+}
+
+resource "aws_nat_gateway" "this" {
+  count = var.enable_ipv4 && var.enable_ipv4_nat ? local.az_count : 0
+
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = merge(tomap({ Name : "${local.unique_id}-nat-${local.azs[count.index]}" }), local.tags)
+}
+
+resource "aws_route" "private_nat_gateway" {
+  count = var.enable_ipv4 && var.enable_ipv4_nat ? local.az_count : 0
+
+  route_table_id         = aws_route_table.private[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.this[count.index].id
 }

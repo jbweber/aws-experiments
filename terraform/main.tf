@@ -13,35 +13,36 @@ locals {
   }
 }
 
-module "ipv4-only" {
-  source = "./modules/network"
+# module "ipv4-only" {
+#   source = "./modules/network"
 
-  vpc_cidr    = "10.0.0.0/16"
-  unique_id   = "ipv4-only"
-  enable_ipv4 = true
-  enable_ipv6 = false
+#   vpc_cidr    = "10.0.0.0/16"
+#   unique_id   = "ipv4-only"
+#   enable_ipv4 = true
+#   enable_ipv6 = false
 
-  tags = local.tags
-}
+#   tags = local.tags
+# }
 
-module "ipv6-only" {
-  source = "./modules/network"
+# module "ipv6-only" {
+#   source = "./modules/network"
 
-  vpc_cidr    = "10.0.0.0/16"
-  unique_id   = "ipv6-only"
-  enable_ipv4 = false
-  enable_ipv6 = true
+#   vpc_cidr    = "10.0.0.0/16"
+#   unique_id   = "ipv6-only"
+#   enable_ipv4 = false
+#   enable_ipv6 = true
 
-  tags = local.tags
-}
+#   tags = local.tags
+# }
 
 module "dual-stack" {
   source = "./modules/network"
 
-  vpc_cidr    = "10.0.0.0/16"
-  unique_id   = "dual-stack"
-  enable_ipv4 = true
-  enable_ipv6 = true
+  vpc_cidr                   = "10.0.0.0/16"
+  unique_id                  = "dual-stack"
+  enable_ipv4                = true
+  enable_ipv4_nat            = true
+  enable_ipv6                = true
   enable_ipv6_private_egress = true
 
   tags = local.tags
