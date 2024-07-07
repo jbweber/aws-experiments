@@ -37,10 +37,11 @@ resource "aws_security_group_rule" "egress_anywhere" {
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
+  ipv6_cidr_blocks  = ["::/0"]
 }
 
 resource "aws_security_group_rule" "ingress_ssh" {
-  for_each = (length(var.ssh_ingress_cidrs) > 0) ? toset(["do"]) : toset([])
+  #  for_each = (length(var.ssh_ipv4_ingress_cidrs) > 0) ? toset(["do"]) : toset([])
 
   description       = "Reason: allow ssh access to the instance"
   security_group_id = aws_security_group.this.id
@@ -48,12 +49,11 @@ resource "aws_security_group_rule" "ingress_ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = var.ssh_ingress_cidrs
+  cidr_blocks       = var.ssh_ipv4_ingress_cidrs
+  ipv6_cidr_blocks  = var.ssh_ipv6_ingress_cidrs
 }
 
 resource "aws_security_group_rule" "ingress_ping" {
-  for_each = (length(var.ssh_ingress_cidrs) > 0) ? toset(["do"]) : toset([])
-
   description       = "Reason: allow ping access to the instance"
   security_group_id = aws_security_group.this.id
   type              = "ingress"
@@ -67,11 +67,11 @@ resource "aws_iam_role" "this" {
   name = local.hostname_with_suffix
 
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
         Principal = {
           Service = "ec2.amazonaws.com"
         }

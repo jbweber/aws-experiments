@@ -17,7 +17,12 @@ variable "security_groups" {
   default = []
 }
 
-variable "ssh_ingress_cidrs" {
+variable "ssh_ipv4_ingress_cidrs" {
+  type    = list(string)
+  default = []
+}
+
+variable "ssh_ipv6_ingress_cidrs" {
   type    = list(string)
   default = []
 }

@@ -21,9 +21,15 @@ variable "ssh_public_key_path" {
   default = "~/.ssh"
 }
 
-# variable "ssh_ingress_cidrs" {
-#   type = list(string)
-# }
+variable "ssh_ipv4_ingress_cidrs" {
+  type    = list(string)
+  default = ["0.0.0.0/0"]
+}
+
+variable "ssh_ipv6_ingress_cidrs" {
+  type    = list(string)
+  default = ["::/0"]
+}
 
 variable "aws_region" {
   type    = string

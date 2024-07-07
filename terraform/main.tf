@@ -48,19 +48,18 @@ module "dual-stack" {
   tags = local.tags
 }
 
+module "jumphost" {
+  source = "./modules/instance"
 
-
-# module "jumphost" {
-#   source = "./modules/instance"
-
-#   attach_external_ip            = true
-#   hostname                      = "jumphost"
-#   hostname_use_unique_id_suffix = true
-#   ssh_ingress_cidrs             = var.ssh_ingress_cidrs
-#   ssh_public_key                = local.ssh_public_key
-#   subnet_id                     = module.network.public_subnet_ids[0]
-#   unique_id                     = local.unique_id
-# }
+  attach_external_ip            = false
+  hostname                      = "jumphost"
+  hostname_use_unique_id_suffix = true
+  ssh_ipv4_ingress_cidrs        = var.ssh_ipv4_ingress_cidrs
+  ssh_ipv6_ingress_cidrs        = var.ssh_ipv6_ingress_cidrs
+  ssh_public_key                = local.ssh_public_key
+  subnet_id                     = module.dual-stack.public_subnet_ids[0]
+  unique_id                     = local.unique_id
+}
 
 # module "kms_secretsmanager" {
 #   source = "./modules/kms"
